@@ -1,4 +1,4 @@
-function [J grad] = nnCostFunction(nn_params, ...
+function [J, grad] = nnCostFunction(nn_params, ...
                                    input_layer_size, ...
                                    hidden_layer_size, ...
                                    num_labels, ...
@@ -39,11 +39,17 @@ z3 = a2 * Theta2';
 a3 = sigmoid(z3);
 b = Theta2;
 a = Theta2(:,2:end);
-pause
-delta3 = a3 - y;
-delta2 = (delta3*Theta2(:,2:end)).*sigmoidGradient(z2);
-Delta1 = X'*delta2;
-Delta2 = a2'*delta3;
+
+delta3 = a3 - ynn;
+
+someFactor = sigmoidGradient(z2);
+
+delta2 = delta3*a;
+delta2 = delta2.*someFactor;
+
+Delta1 = delta2' * X;
+Delta2 = delta3' * a2;
+
 
 h1 = (-ynn).*log(a3);
 h2 = (1-ynn).*log(1-a3);
@@ -56,18 +62,17 @@ hdiff = h1 - h2;
 Theta1_grad = (1/m)*Delta1;
 Theta2_grad = (1/m)*Delta2;
 
-J = (1/m)*sum(sum(hdiff));
+regularizedCost = (lambda/(2*m)) * (sum(sum(Theta1(:,2:end).^2)) + sum(sum(Theta2(:,2:end).^2)));
 
-%for t = 1:m
- %   a1 = X(t,:);
-  %  a2 = sigmoid(Theta1(t)*a1);
-   % a2 = [1  a2];
-    %a3 = sigmoid(Theta2(t)*a2);
-    %delta3 = a3 - y(3);
-    
-    
-%end
+grad1reg = zeros(size(Theta1_grad));
+grad1reg(:,1) = Theta1_grad(:,1);
+grad1reg(:,2:end) = Theta1_grad(:,2:end) + (lambda/m) * Theta1(:,2:end);
+Theta1_grad = grad1reg;
 
+grad2reg = zeros(size(Theta2_grad));
+grad2reg(:,1) = Theta2_grad(:,1);
+grad2reg(:,2:end) = Theta2_grad(:,2:end) + (lambda/m) * Theta2(:,2:end);
+Theta2_grad = grad2reg;
         
 % ====================== YOUR CODE HERE ======================
 % Instructions: You should complete the code by working through the
@@ -102,13 +107,12 @@ J = (1/m)*sum(sum(hdiff));
 %
 
 
-
-
 % -------------------------------------------------------------
 
 % =========================================================================
 
 % Unroll gradients
+J = (1/m)*sum(sum(hdiff)) + regularizedCost;
 grad = [Theta1_grad(:) ; Theta2_grad(:)];
 
 
